@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: homework
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  minReadySeconds: 10
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      nodeSelector:
+        homework: "true"
+      initContainers:
+        - name: init-download-index
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "Downloading HTML page from https://httpbin.org/html..."
+              wget -O /init/index.html https://httpbin.org/html
+              echo "Download completed: $(cat /init/index.html | head -n 1)"
+          volumeMounts:
+            - name: homework-volume
+              mountPath: /init
+      containers:
+        - name: nginx
+          image: nginx:stable-alpine3.23
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: homework-volume
+              mountPath: /homework
+          command:
+            - sh
+            - -c
+            - |
+              echo "server {
+                listen 8000;
+                server_name localhost;
+                root /homework;
+                index index.html;
+              }" > /etc/nginx/conf.d/homework.conf
+              touch /tmp/healthy
+              nginx -g "daemon off;"
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - |
+                    echo "Removing index.html from /homework before termination..."
+                    rm -f /homework/index.html
+                    echo "File /homework/index.html deleted."
+                    rm -f /tmp/healthy
+          readinessProbe:
+            exec:
+              command:
+              - cat
+              - /tmp/healthy
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: homework-volume
+          emptyDir: {}

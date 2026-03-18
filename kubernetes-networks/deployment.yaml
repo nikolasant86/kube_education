@@ -65,10 +65,12 @@ spec:
                     echo "File /homework/index.html deleted."
                     rm -f /tmp/healthy
           readinessProbe:
-            exec:
-              command:
-              - cat
-              - /tmp/healthy
+            httpGet:
+              path: /index.html
+              port: 8000
+              httpHeaders:
+              - name: Custom-Header
+                value: Awesome
             initialDelaySeconds: 5
             periodSeconds: 5
       volumes:

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: homework
+  labels:
+    app: nginx
+data:
+  NGINX_IMAGE: "nginx:stable-alpine3.23"
+  NGINX_PORT: "8000"
+  INIT_IMAGE: "busybox"
+  DOWNLOAD_URL: "https://httpbin.org/html"
+  file: |
+    NGINX_IMAGE: "nginx:stable-alpine3.23"
+    NGINX_PORT: "8000"
+    INIT_IMAGE: "busybox"
+    DOWNLOAD_URL: "https://httpbin.org"
